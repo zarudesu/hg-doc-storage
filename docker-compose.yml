@@ -8,15 +8,20 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/contract_db
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-admin}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-secret}
-      - MINIO_BUCKET=contracts
-      - API_KEY=${API_KEY:-change-this-api-key}
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - BASE_URL=${BASE_URL:-https://your-domain.com}
+      - DATABASE_URL=${DATABASE_URL}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - MINIO_SECURE=${MINIO_SECURE}
+      - API_KEY=${API_KEY}
+      - ALLOWED_IPS=${ALLOWED_IPS}
+      - APP_NAME=${APP_NAME}
+      - ENVIRONMENT=${ENVIRONMENT}
+      - DEBUG=${DEBUG}
+      - BASE_URL=${BASE_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE}
     depends_on:
       db:
         condition: service_healthy
@@ -39,7 +44,7 @@ services:
     environment:
       POSTGRES_DB: contract_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     ports:
       - "5432:5432"
@@ -62,8 +67,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-secret}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
     restart: unless-stopped
@@ -75,7 +80,7 @@ services:
       timeout: 20s
       retries: 3
 
-  # Nginx reverse proxy (опционально для продакшена)
+  # Nginx reverse proxy для production с SSL
   nginx:
     image: nginx:alpine
     ports:

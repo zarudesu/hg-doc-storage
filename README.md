@@ -37,7 +37,22 @@ BASE_URL=https://your-domain.com
 ./deploy.sh
 ```
 
-### 4. Проверка
+### 4. Настройка SSL (опционально)
+```bash
+# Для HTTPS с SSL сертификатами
+sudo apt install certbot
+sudo certbot certonly --standalone -d doc.healthgarden.ru
+
+# Копируем сертификаты
+sudo cp /etc/letsencrypt/live/doc.healthgarden.ru/fullchain.pem nginx/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/doc.healthgarden.ru/privkey.pem nginx/ssl/key.pem
+sudo chown $USER:$USER nginx/ssl/*.pem
+
+# Запускаем с Nginx и SSL
+docker-compose --profile production up -d
+```
+
+### 5. Проверка
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
      https://your-domain.com/health
