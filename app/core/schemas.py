@@ -40,5 +40,4 @@ class ContractInfo(BaseModel):
     signed_at: Optional[datetime] = None
     signer_id: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
