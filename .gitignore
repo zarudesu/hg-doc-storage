@@ -1,0 +1,136 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Environments
+.env
+.env.local
+.env.production
+.env.staging
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+nginx_logs/
+app_logs/
+
+# Docker
+.dockerignore
+
+# Local development files
+uploads/
+storage/
+*.pdf
+*.tmp
+test_*.pdf
+downloaded_*.pdf
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Application specific
+contracts/
+signed_contracts/
+
+# Backup files
+backups/
+backup/
+*.sql.backup
+*.dump
+
+# SSL certificates (keep structure, ignore files)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+nginx/ssl/*.csr
+
+# Secrets and keys
+secrets/
+keys/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Production configs (use templates instead)
+docker-compose.prod.yml
+.env.prod
+
+# MinIO data
+minio_data/
+
+# Monitoring
+prometheus/
+grafana/
+
+# Temporary files
+temp/
+tmp/
+.tmp/
