@@ -41,11 +41,11 @@ BASE_URL=https://your-domain.com
 ```bash
 # Для HTTPS с SSL сертификатами
 sudo apt install certbot
-sudo certbot certonly --standalone -d doc.healthgarden.ru
+sudo certbot certonly --standalone -d your-domain.com
 
 # Копируем сертификаты
-sudo cp /etc/letsencrypt/live/doc.healthgarden.ru/fullchain.pem nginx/ssl/cert.pem
-sudo cp /etc/letsencrypt/live/doc.healthgarden.ru/privkey.pem nginx/ssl/key.pem
+sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem nginx/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem nginx/ssl/key.pem
 sudo chown $USER:$USER nginx/ssl/*.pem
 
 # Запускаем с Nginx и SSL

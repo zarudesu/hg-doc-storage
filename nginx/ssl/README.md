@@ -12,11 +12,11 @@ This directory should contain your SSL certificates for HTTPS:
 sudo apt install certbot
 
 # Get SSL certificate
-sudo certbot certonly --standalone -d doc.healthgarden.ru
+sudo certbot certonly --standalone -d your-domain.com
 
 # Copy certificates
-sudo cp /etc/letsencrypt/live/doc.healthgarden.ru/fullchain.pem nginx/ssl/cert.pem
-sudo cp /etc/letsencrypt/live/doc.healthgarden.ru/privkey.pem nginx/ssl/key.pem
+sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem nginx/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem nginx/ssl/key.pem
 sudo chown $USER:$USER nginx/ssl/*.pem
 ```
 
@@ -27,7 +27,7 @@ sudo chown $USER:$USER nginx/ssl/*.pem
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout nginx/ssl/key.pem \
   -out nginx/ssl/cert.pem \
-  -subj "/CN=doc.healthgarden.ru"
+  -subj "/CN=your-domain.com"
 ```
 
 **Note:** Never commit actual SSL certificates to git!
