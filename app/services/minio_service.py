@@ -12,21 +12,32 @@ logger = logging.getLogger(__name__)
 
 class MinIOService:
     def __init__(self):
-        self.client = boto3.client(
-            's3',
-            endpoint_url=f"http://{settings.minio_endpoint}",
-            aws_access_key_id=settings.minio_access_key,
-            aws_secret_access_key=settings.minio_secret_key,
-            config=Config(signature_version='s3v4'),
-            region_name='us-east-1'
-        )
+        self._client = None
         self.bucket = settings.minio_bucket
-        self._ensure_bucket_exists()
+        self._initialized = False
+    
+    @property
+    def client(self):
+        """Ленивая инициализация клиента"""
+        if self._client is None:
+            self._client = boto3.client(
+                's3',
+                endpoint_url=f"http://{settings.minio_endpoint}",
+                aws_access_key_id=settings.minio_access_key,
+                aws_secret_access_key=settings.minio_secret_key,
+                config=Config(signature_version='s3v4'),
+                region_name='us-east-1'
+            )
+            if not self._initialized:
+                self._ensure_bucket_exists()
+                self._initialized = True
+        return self._client
     
     def _ensure_bucket_exists(self):
         """Создает bucket если он не существует"""
         try:
             self.client.head_bucket(Bucket=self.bucket)
+            logger.info(f"Bucket exists: {self.bucket}")
         except ClientError as e:
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
@@ -67,11 +78,8 @@ class MinIOService:
             logger.error(f"Failed to get file {file_path}: {e}")
             raise
     
-    def generate_signed_url(self, file_path: str, expiration: int = None) -> str:
+    def generate_signed_url(self, file_path: str, expiration: int = 3600) -> str:
         """Генерирует подписанную ссылку для доступа к файлу"""
-        if expiration is None:
-            expiration = settings.signed_url_expire_hours * 3600
-        
         try:
             url = self.client.generate_presigned_url(
                 'get_object',

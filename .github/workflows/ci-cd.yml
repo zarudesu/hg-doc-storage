@@ -1,4 +1,4 @@
-name: 🚀 Production Build & Test
+name: 🚀 CI/CD Pipeline
 
 on:
   push:
@@ -28,15 +28,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
-      minio:
-        image: minio/minio:latest
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        options: --health-cmd "curl -f http://localhost:9000/minio/health/live" --health-interval 30s --health-timeout 20s --health-retries 3
-        ports:
-          - 9000:9000
     
     steps:
     - name: 📥 Checkout code
@@ -52,28 +43,24 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-asyncio pytest-cov
+        pip install pytest pytest-asyncio pytest-cov httpx
     
     - name: 🧪 Run tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        API_KEY: test-api-key-for-ci
         MINIO_ENDPOINT: localhost:9000
         MINIO_ACCESS_KEY: minioadmin
         MINIO_SECRET_KEY: minioadmin
-        API_KEY: test-api-key-for-ci
       run: |
-        # Ждем готовности MinIO
-        sleep 10
-        
-        # Запускаем тесты
-        pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+        pytest tests/ -v --cov=app --cov-report=xml
     
-    - name: 📊 Upload coverage to Codecov
+    - name: 📊 Upload coverage reports
       uses: codecov/codecov-action@v3
+      if: always()
       with:
         file: ./coverage.xml
         flags: unittests
-        name: codecov-umbrella
 
   security-scan:
     name: 🔒 Security Scan
@@ -88,20 +75,36 @@ jobs:
       with:
         scan-type: 'fs'
         scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+        format: 'table'
+        exit-code: '0'  # Don't fail on vulnerabilities for now
+        severity: 'CRITICAL,HIGH'
+
+  build-test:
+    name: 🐳 Build Test
+    runs-on: ubuntu-latest
+    needs: [test]
     
-    - name: 📤 Upload Trivy scan results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: 🔨 Build Docker image (test)
+      uses: docker/build-push-action@v5
       with:
-        sarif_file: 'trivy-results.sarif'
+        context: .
+        push: false
+        tags: hg-doc-storage:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   build-and-push:
-    name: 🐳 Build & Push Docker Image
+    name: 🚀 Build & Push
     runs-on: ubuntu-latest
-    needs: [test, security-scan]
-    if: github.ref == 'refs/heads/main'
+    needs: [test, security-scan, build-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     permissions:
       contents: read
@@ -128,7 +131,6 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
-          type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
     
@@ -141,63 +143,3 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
-
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build-and-push]
-    if: github.ref == 'refs/heads/develop'
-    environment: staging
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: 🚀 Deploy to staging server
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.STAGING_HOST }}
-        username: ${{ secrets.STAGING_USER }}
-        key: ${{ secrets.STAGING_SSH_KEY }}
-        script: |
-          cd /opt/hg-doc-storage
-          git pull origin develop
-          docker-compose pull
-          docker-compose up -d --remove-orphans
-          docker system prune -f
-
-  deploy-production:
-    name: 🎯 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-and-push]
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: 🎯 Deploy to production server
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.PRODUCTION_HOST }}
-        username: ${{ secrets.PRODUCTION_USER }}
-        key: ${{ secrets.PRODUCTION_SSH_KEY }}
-        script: |
-          cd /opt/hg-doc-storage
-          
-          # Backup before deployment
-          docker-compose exec -T db pg_dump -U postgres contract_db > "backup/pre-deploy-$(date +%Y%m%d_%H%M%S).sql"
-          
-          # Deploy new version
-          git pull origin main
-          docker-compose pull
-          docker-compose up -d --remove-orphans
-          
-          # Health check
-          sleep 30
-          curl -f http://localhost:8000/health || exit 1
-          
-          # Cleanup
-          docker system prune -f

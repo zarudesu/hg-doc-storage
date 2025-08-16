@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from app.services.contract_service import ContractService
-from app.core.schemas import ContractInitiate, ContractSign
+from app.core.schemas import ContractUpload, ContractSign
 import uuid
 
 
@@ -16,9 +16,9 @@ class TestContractService:
     @pytest.fixture
     def sample_contract_data(self):
         """Sample contract data for testing"""
-        return ContractInitiate(
+        return ContractUpload(
             client_id="test_client_001",
-            type="surgery"
+            contract_type="surgery"
         )
     
     @pytest.fixture
