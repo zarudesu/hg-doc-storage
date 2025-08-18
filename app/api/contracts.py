@@ -65,7 +65,9 @@ async def upload_original_file(
         # Формируем ответ
         return ContractUploadResponse(
             contract_id=contract.id,
-            file_url=f"{settings.base_url}/api/v1/download/{contract.id}/original"
+            short_id=contract.short_id,
+            file_url=f"{settings.base_url}/api/v1/download/{contract.id}/original",
+            short_url=f"{settings.base_url}/{contract.short_id}"
         )
         
     except Exception as e:
@@ -118,7 +120,9 @@ async def upload_signed_file(
         # Формируем ответ
         return ContractSignResponse(
             contract_id=contract.id,
-            signed_file_url=f"{settings.base_url}/api/v1/download/{contract.id}/signed"
+            short_id=contract.short_id,
+            signed_file_url=f"{settings.base_url}/api/v1/download/{contract.id}/signed",
+            short_url=f"{settings.base_url}/{contract.short_id}"
         )
         
     except ValueError as e:
@@ -204,11 +208,13 @@ async def get_contract_status(
     
     return ContractInfo(
         contract_id=contract.id,
+        short_id=contract.short_id,
         client_id=contract.client_id,
         contract_type=contract.contract_type,
         status=contract.status,
         original_file_url=f"{settings.base_url}/api/v1/download/{contract.id}/original",
         signed_file_url=f"{settings.base_url}/api/v1/download/{contract.id}/signed" if contract.status == "signed" else None,
+        short_url=f"{settings.base_url}/{contract.short_id}",
         created_at=contract.created_at,
         signed_at=contract.signed_at,
         signer_id=contract.signer_id

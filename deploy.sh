@@ -89,7 +89,17 @@ fi
 
 # Выполнение миграций
 echo "🗄️ Running database migrations..."
+echo "   - Applying schema updates for short links support..."
 docker-compose run --rm app alembic upgrade head
+
+# Проверка успешности миграции
+echo "🔍 Verifying migration..."
+if docker-compose exec -T db psql -U postgres -d contract_db -c "\d contracts" | grep -q "short_id"; then
+    echo "✅ Migration successful - short_id column found"
+else
+    echo "❌ Migration may have failed - checking table structure..."
+    docker-compose exec -T db psql -U postgres -d contract_db -c "\d contracts"
+fi
 
 # Запуск приложения
 echo "🚀 Starting application..."
@@ -134,10 +144,16 @@ docker-compose ps
 echo ""
 echo "✅ Deployment completed successfully!"
 echo ""
+echo "🆕 NEW: Short Links Feature"
+echo "   - Universal links for SMS: $BASE_URL/{short_id}"
+echo "   - Automatic file version selection"
+echo "   - Same link for original and signed documents"
+echo ""
 echo "🔗 Service URLs:"
 echo "   Health Check: http://localhost:8000/health"
 echo "   API Base URL: $BASE_URL"
 echo "   MinIO Console: http://localhost:9001"
+echo "   Example Short Link: $BASE_URL/abc12345"
 echo ""
 echo "🔐 Security Information:"
 echo "   API Key: $API_KEY"

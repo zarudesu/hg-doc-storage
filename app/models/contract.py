@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import Column, String, DateTime, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
@@ -11,6 +11,7 @@ class Contract(Base):
     __tablename__ = "contracts"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    short_id = Column(String(12), nullable=False, unique=True, index=True)  # Короткий ID для ссылок
     client_id = Column(Text, nullable=False, index=True)
     contract_type = Column(Text, nullable=False)
     status = Column(Text, nullable=False, default="uploaded", index=True)  # uploaded / signed

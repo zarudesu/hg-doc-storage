@@ -8,11 +8,48 @@ import uuid
 from datetime import datetime
 from typing import Optional
 import logging
+import string
+import random
 
 logger = logging.getLogger(__name__)
 
 
 class ContractService:
+    
+    @staticmethod
+    def generate_short_id() -> str:
+        """Генерирует короткий уникальный ID (8 символов)"""
+        chars = string.ascii_lowercase + string.digits
+        return ''.join(random.choice(chars) for _ in range(8))
+    
+    @staticmethod
+    async def find_contract_by_short_id(db: AsyncSession, short_id: str) -> Optional[Contract]:
+        """Находит договор по короткому ID"""
+        result = await db.execute(
+            select(Contract).where(Contract.short_id == short_id)
+        )
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def resolve_contract_id(db: AsyncSession, identifier: str) -> Optional[Contract]:
+        """
+        Универсальный поиск договора по ID
+        identifier может быть:
+        - Полный UUID (36 символов)
+        - Короткий ID (8 символов)
+        """
+        if len(identifier) == 36:
+            # Полный UUID
+            try:
+                contract_uuid = uuid.UUID(identifier)
+                return await ContractService.get_contract(db, contract_uuid)
+            except ValueError:
+                return None
+        elif len(identifier) == 8:
+            # Короткий ID
+            return await ContractService.find_contract_by_short_id(db, identifier)
+        else:
+            return None
     
     @staticmethod
     async def upload_original(
@@ -26,6 +63,13 @@ class ContractService:
         """
         contract_id = uuid.uuid4()
         
+        # Генерируем уникальный короткий ID
+        short_id = ContractService.generate_short_id()
+        
+        # Проверяем уникальность короткого ID
+        while await ContractService.find_contract_by_short_id(db, short_id):
+            short_id = ContractService.generate_short_id()
+        
         # Путь к файлу: contracts/{uuid}/original.pdf
         file_path = f"contracts/{contract_id}/original.pdf"
         
@@ -35,6 +79,7 @@ class ContractService:
         # Создаем запись в БД
         contract = Contract(
             id=contract_id,
+            short_id=short_id,
             client_id=contract_data.client_id,
             contract_type=contract_data.contract_type,
             status="uploaded",
@@ -45,7 +90,7 @@ class ContractService:
         await db.commit()
         await db.refresh(contract)
         
-        logger.info(f"Original file uploaded: {contract_id}")
+        logger.info(f"Original file uploaded: {contract_id}, short_id: {short_id}")
         return contract
     
     @staticmethod
@@ -122,3 +167,24 @@ class ContractService:
             return None
             
         return await minio_service.get_file(file_path)
+    
+    @staticmethod
+    async def get_latest_file_content(contract: Contract) -> Optional[tuple[bytes, str]]:
+        """
+        Получает актуальную версию файла
+        Возвращает (содержимое, тип_файла)
+        Приоритет: подписанный > оригинал
+        """
+        # Сначала пробуем подписанный файл
+        if contract.status == "signed" and contract.signed_file_path:
+            content = await minio_service.get_file(contract.signed_file_path)
+            if content:
+                return content, "signed"
+        
+        # Если подписанного нет, возвращаем оригинал
+        if contract.original_file_path:
+            content = await minio_service.get_file(contract.original_file_path)
+            if content:
+                return content, "original"
+        
+        return None

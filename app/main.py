@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app.api.contracts import router as contracts_router
+from app.api.short_links import router as short_links_router
 from app.core.config import settings
 import logging
 import time
@@ -46,6 +47,7 @@ app.add_middleware(
 
 # Подключение роутеров
 app.include_router(contracts_router)
+app.include_router(short_links_router)  # Добавляем роутер для коротких ссылок
 
 
 # Request ID middleware для трейсинга

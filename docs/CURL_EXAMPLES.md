@@ -1,17 +1,99 @@
-# 🧪 Примеры cURL для тестирования API
+# 🧪 Примеры cURL для тестирования API + Короткие ссылки
 
 ## 🔧 Настройка переменных
 
 ```bash
 # Установите ваши реальные значения
-export API_BASE="https://contracts.your-domain.com"
+export API_BASE="https://doc.yourcompany.ru"
 export API_KEY="your-secret-api-key-here"
 export CONTRACT_ID="550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
 
-## 📡 Примеры запросов
+## 📎 Новое: Короткие ссылки
+
+### Основное преимущество
+Одна короткая ссылка автоматически возвращает актуальную версию файла!
+
+### Тестирование коротких ссылок
+
+#### 1. Загрузка с получением короткой ссылки
+```bash
+curl -X POST "$API_BASE/api/v1/upload" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "client_id=CLIENT_123456" \
+  -F "contract_type=surgery" \
+  -F "file=@contract.pdf"
+```
+
+**Новый ответ с короткой ссылкой:**
+```json
+{
+  "contract_id": "550e8400-e29b-41d4-a716-446655440000",
+  "short_id": "abc12345",
+  "file_url": "https://doc.yourcompany.ru/api/v1/download/550e8400-e29b-41d4-a716-446655440000/original",
+  "short_url": "https://doc.yourcompany.ru/abc12345",
+  "message": "File uploaded successfully"
+}
+```
+
+#### 2. Скачивание по короткой ссылке (оригинал)
+```bash
+# Используем короткий ID из ответа
+curl -L "https://doc.yourcompany.ru/abc12345" -o downloaded.pdf
+
+# Проверяем заголовки
+curl -I "https://doc.yourcompany.ru/abc12345"
+```
+
+**Заголовки ответа:**
+```http
+X-File-Type: original
+X-Contract-Status: uploaded
+X-Short-ID: abc12345
+Content-Disposition: attachment; filename=contract_abc12345_original.pdf
+```
+
+#### 3. Подписание договора
+```bash
+curl -X POST "$API_BASE/api/v1/sign/$CONTRACT_ID" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "signer_id=SIGNER_789123" \
+  -F "file=@signed_contract.pdf"
+```
+
+**Ответ (та же короткая ссылка!):**
+```json
+{
+  "contract_id": "550e8400-e29b-41d4-a716-446655440000",
+  "short_id": "abc12345",
+  "signed_file_url": "https://doc.yourcompany.ru/api/v1/download/550e8400-e29b-41d4-a716-446655440000/signed",
+  "short_url": "https://doc.yourcompany.ru/abc12345",
+  "message": "File signed successfully"
+}
+```
+
+#### 4. Скачивание по той же ссылке (теперь подписанный!)
+```bash
+# Та же ссылка, но теперь возвращает подписанную версию!
+curl -L "https://doc.yourcompany.ru/abc12345" -o downloaded_signed.pdf
+
+# Проверяем заголовки
+curl -I "https://doc.yourcompany.ru/abc12345"
+```
+
+**Обновленные заголовки:**
+```http
+X-File-Type: signed
+X-Contract-Status: signed
+X-Short-ID: abc12345
+Content-Disposition: attachment; filename=contract_abc12345_signed.pdf
+```
+
+---
+
+## 📡 Стандартные примеры (всё ещё работают)
 
 ### 1. Health Check (без авторизации)
 ```bash
