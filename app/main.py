@@ -45,9 +45,10 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-# Подключение роутеров
-app.include_router(contracts_router)
-app.include_router(short_links_router)  # Добавляем роутер для коротких ссылок
+# Подключение роутеров - ПОРЯДОК ВАЖЕН!
+app.include_router(contracts_router)  # API роуты с префиксом /api/v1 - первыми
+# short_links_router подключается ПОСЛЕДНИМ, т.к. у него универсальный паттерн /{file_identifier}
+# который может перехватывать все запросы
 
 
 # Request ID middleware для трейсинга
@@ -143,6 +144,11 @@ async def startup_event():
 async def shutdown_event():
     """Завершение работы приложения"""
     logger.info(f"Shutting down {settings.app_name}")
+
+
+# Подключаем роутер коротких ссылок ПОСЛЕДНИМ
+# Этот роутер должен быть в конце, т.к. у него универсальный паттерн /{file_identifier}
+app.include_router(short_links_router)
 
 
 if __name__ == "__main__":
